@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Smart Compost</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="src/bootstrap/css/bootstrap.min.css">
+		<script src="src/jQuery/jquery-3.2.1.min.js"></script>
+		<script src="src/bootstrap/js/bootstrap.min.js"></script>
+		<script src="src/justgage/raphael-2.1.4.min.js"></script>
+		<!--<script src="../justgage-1.0.1.js"></script>-->
+		<script src="src/justgage/justgage.js"></script>
+		<script src="src/moment/moment.js"></script>
+		<script src="src/moment/moment-timezone.js"></script>
+	</head>
+	<body onload="getCurrentReadings()">
+		<div class="container">
+			<div class="page-header">
+				<h3>Smart Compost</h3>
+				<p><span id='datetimeSpan'></span></p>
+			</div>
+			<div class="row">
+				<!-- Days Guage-->
+				<div class="col-sm-3" >
+					<div id="tempGauge"></div>
+				</div>
+				<div class="col-sm-6">
+					
+					<!-- Row 1 - Indicators-->
+					<div class="row">
+						<!-- Temp Indicator Guage-->
+						<div class="col-xs-6" id="tempPanel"></div>
+						
+						<!-- Moisture Indicator Guage-->
+						<div class="col-xs-6" id="moisturePanel"></div>
+						
+						
+					</div>
+					
+					<!-- Row 2 - Indicators-->
+					<div class="row">
+						<!-- Methane Indicator Guage-->
+						<div class="col-xs-6" id="methanePanel"></div>
+						
+						<!-- Moisture Indicator Guage-->
+						<div class="col-xs-6" id="waterLevelPanel"></div>
+						
+					</div>
+					
+					<!-- Row 3 - Indicators-->
+					<div class="row">
+						<!-- Kitchen Scrap Indicator -->
+						<div class="col-xs-6" id="scrapLevelPanel"></div>
+						
+						<!-- Total Scraps Indicator-->
+						<div class="col-xs-6" id="totalScrapsPanel"></div>
+						
+					</div>
+									
+				
+				 </div>
+			</div>
+			<div class="row">
+			    <div class="col-sm-12">
+					<div id="actionPanel" class="panel panel-default">
+					</div>
+					
+				</div>
+			</div>
+			<div class="row">
+			    <div class="col-sm-12">
+					<div class="well well-sm">
+						<div>Icons made by <a href="http://www.freepik.com" title="Freepik">Freepik</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></div>
+						<div>Graphs made by <a href="http://www.justgage.com" title="JustGage">Just Gage</a></div>
+						
+					</div>
+				</div>
+			</div>
+			
+		</div>
+	</body>	  
+
+
+    <script>
+	
+	function getCurrentReadings() {
+        if (window.XMLHttpRequest) {
+            // code for IE7+, Firefox, Chrome, Opera, Safari
+            xmlhttp = new XMLHttpRequest();
+        } else {
+            // code for IE6, IE5
+            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+        }
+        xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var currentReadings = JSON.parse(this.responseText);
+
+				var days = currentReadings['days'];
+				var tempF = currentReadings['tempF'];
+				var tempC = currentReadings['tempC'];
+                var moisture = currentReadings['moisture'];
+				var methane = currentReadings['methane'];
+				var waterLevelMsg = currentReadings['waterLevelMsg'];
+				var scrapLevelMsg = currentReadings['scrapLevelMsg'];
+				var totalScraps = currentReadings['totalScraps'];
+				var messages = currentReadings['messages'];
+				var tempAlert = currentReadings['tempAlert'];
+				var moistAlert = currentReadings['moistAlert'];
+				var methaneAlert = currentReadings['methaneAlert'];
+				var waterLevelAlert = currentReadings['waterLevelAlert'];
+				var scrapLevelAlert = currentReadings['scrapLevelAlert'];			
+                var dateTime = currentReadings['datetime'];
+
+				//alert(currentTempReading);
+				
+				//handle date time of reading
+				var readingDateTime = moment.unix(dateTime);				
+				document.getElementById("datetimeSpan").textContent = "Last Reading: " + readingDateTime.fromNow();
+				
+
+				
+				//handle Temperature			
+				writePanel(tempF, tempF + "&#8457", "Temperature", tempAlert, "tempPanel", "008-thermometer.svg");
+				
+				//handle Moisture				
+				writePanel(moisture, moisture + "%", "Moisture", moistAlert, "moisturePanel", "010-liquid-droplet-on-ground.svg");
+
+				//handle Methane
+				writePanel(methane, methane + " ppm", "Methane", methaneAlert, "methanePanel", "005-co2.svg");
+			
+				//handle water level
+				writePanel(0, waterLevelMsg, "Reservoir", waterLevelAlert, "waterLevelPanel", "001-pitcher.svg");
+				
+				//handle scrap level
+				writePanel(0, scrapLevelMsg, "Kitchen Bin", scrapLevelAlert, "scrapLevelPanel", "007-garbage.svg");
+				
+				//handle total scraps
+				writePanel(totalScraps, totalScraps + " lbs", "Impact", "alert alert-success", "totalScrapsPanel", "004-recycling.svg");
+				
+				
+				
+				//write Actions pabnel
+				writeActionPanel('panel panel-info',messages);
+				
+				//handle chart
+				
+				var daysHotMax = 35;
+				if (days<daysHotMax){
+					var daysHotsGauge = new JustGage({
+						id: "tempGauge",
+						value: days,
+						min: 0,
+						max: daysHotMax,
+						title: "Compost Readiness ",
+						label: " out of " + daysHotMax + " days",
+						gaugeWidthScale: 0.2,
+						levelColorsGradient: false,
+						noGradient: true,
+						startAnimationTime: 1000,
+						showInnerShadow: true,
+						labelFontColor: "#000000",
+						relativeGaugeSize: true,
+						donut: true,
+						donutStartAngle: 90,
+						titlePosition: "below",
+						//titleMaxFontSize: 12,
+						//onAnimationEnd: kvLookup('onAnimationEnd', config, dataset, null), function after animation
+						//gaugeColor: "#FF0000"
+						valueFontColor: "#000000",
+						labelFontColor: "#000000",
+						levelColors: ["#2f4f4f"],
+						titleFontColor: "#000000"
+						//valueFontFamily: kvLookup('valueFontFamily', config, dataset, "Arial"),
+					});
+				
+				}else{
+				
+					//document.getElementById("tempGauge").text = "Compost is ready!";
+				
+					document.getElementById("tempGauge").innerHTML = "<div style='text-align:center' ><img src='icons/svg/sprout.svg' height='100px' class='img center-block'><h4>Compost is ready!</h4></div>";
+				}//end of handle chart
+				
+				
+			}	
+
+		}
+        //xmlhttp.open("GET","currentReadings.php?",true);
+		xmlhttp.open("GET","currentReadings.json?",true);
+		
+        xmlhttp.send();
+
+	}
+	
+	function writePanel(reading, readingText, heading, alertType, panelID, image){
+		var panelHTML = 
+			'<div class="media">' +
+				'<div class="media-left">' +
+					'<img src="icons/svg/' + image + '" class="media-object" style="width:35px">' +
+				'</div>' +
+				'<div class="media-body">' +
+					'<h5 class="media-heading">' + heading + '</h5>' +
+					'<p><span>' + readingText + '</span></p>' +
+				'</div>' +
+			'</div>'
+			
+		document.getElementById(panelID).innerHTML = "<div class='" + alertType + "'>"+panelHTML+"</div>";
+			
+	
+	}
+	
+	function writeActionPanel(alertType, messages){
+		var panelHTML = 	'<div class="panel-heading">Actions</div>' +
+							'<div class="panel-body">' + 
+								messages +
+							'</div>'
+		document.getElementById('actionPanel').innerHTML = panelHTML;
+	
+	
+	}
+
+	
+	
+	
+    </script>
+	
+
+</html>
